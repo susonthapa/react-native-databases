@@ -2,15 +2,24 @@ import { Todo } from '@/components/Todo';
 import { TodoInput } from '@/components/TodoInput';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import React from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTodos } from '../../hooks/useTodos';
 
 export default function HomeScreen() {
-  const { todos, addTodo, toggleTodo, deleteTodo } = useTodos();
+  const { todos, addTodo, toggleTodo, deleteTodo, isLoading } = useTodos();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  // Show a loading indicator while data is being fetched
+  if (isLoading) {
+    return (
+      <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
+        <ActivityIndicator size="large" color={isDark ? '#4d9be6' : '#3498db'} />
+      </View>
+    );
+  }
 
   return (
     <View 
@@ -35,7 +44,7 @@ export default function HomeScreen() {
       ) : (
         <FlatList
           data={todos}
-          keyExtractor={(item) => item._id.toString()}
+          keyExtractor={(item) => item.id.toString()}
           renderItem={({ item }) => (
             <Todo
               item={item}
@@ -59,6 +68,12 @@ const styles = StyleSheet.create({
   },
   containerDark: {
     backgroundColor: '#1a202c',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
   },
   title: {
     fontSize: 28,

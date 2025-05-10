@@ -2,12 +2,12 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Todo as TodoModel } from '../models/Todo';
+import { TodoDocType } from '../models/TodoSchema';
 
 interface TodoProps {
-  item: TodoModel;
-  onToggle: (item: TodoModel) => void;
-  onDelete: (item: TodoModel) => void;
+  item: TodoDocType;
+  onToggle: (item: TodoDocType) => void;
+  onDelete: (item: TodoDocType) => void;
 }
 
 export const Todo = ({ item, onToggle, onDelete }: TodoProps) => {

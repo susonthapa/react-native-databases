@@ -1,3 +1,6 @@
+import 'react-native-get-random-values'; // CRITICAL: Must be first import
+import '../models/shim';
+
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -5,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { RealmProvider } from '../providers/RealmProvider';
+import { RxDBProvider } from '../providers/RxDBProvider';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -19,7 +22,7 @@ export default function RootLayout() {
   }
 
   return (
-    <RealmProvider>
+    <RxDBProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -27,6 +30,6 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
-    </RealmProvider>
+    </RxDBProvider>
   );
 }
