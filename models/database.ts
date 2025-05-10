@@ -36,7 +36,7 @@ export async function createDatabase() {
   if (dbPromise) return dbPromise;
 
   if (isDevelopment) {
-    await addRxPlugin(RxDBDevModePlugin);
+    addRxPlugin(RxDBDevModePlugin);
 }
 
   // Create the database
