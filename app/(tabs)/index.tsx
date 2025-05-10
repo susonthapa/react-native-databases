@@ -1,44 +1,16 @@
 import { Todo } from '@/components/Todo';
 import { TodoInput } from '@/components/TodoInput';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import React, { useState } from 'react';
+import React from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-interface TodoItem {
-  id: string;
-  text: string;
-  completed: boolean;
-}
+import { useTodos } from '../../hooks/useTodos';
 
 export default function HomeScreen() {
-  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const { todos, addTodo, toggleTodo, deleteTodo } = useTodos();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-
-  const addTodo = (text: string) => {
-    setTodos([
-      ...todos,
-      {
-        id: Date.now().toString(),
-        text,
-        completed: false,
-      },
-    ]);
-  };
-
-  const toggleTodo = (id: string) => {
-    setTodos(
-      todos.map((todo) =>
-        todo.id === id ? { ...todo, completed: !todo.completed } : todo
-      )
-    );
-  };
-
-  const deleteTodo = (id: string) => {
-    setTodos(todos.filter((todo) => todo.id !== id));
-  };
 
   return (
     <View 
@@ -63,12 +35,10 @@ export default function HomeScreen() {
       ) : (
         <FlatList
           data={todos}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item._id.toString()}
           renderItem={({ item }) => (
             <Todo
-              id={item.id}
-              text={item.text}
-              completed={item.completed}
+              item={item}
               onToggle={toggleTodo}
               onDelete={deleteTodo}
             />

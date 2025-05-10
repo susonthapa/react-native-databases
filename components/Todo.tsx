@@ -2,40 +2,39 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Todo as TodoModel } from '../models/Todo';
 
 interface TodoProps {
-  id: string;
-  text: string;
-  completed: boolean;
-  onToggle: (id: string) => void;
-  onDelete: (id: string) => void;
+  item: TodoModel;
+  onToggle: (item: TodoModel) => void;
+  onDelete: (item: TodoModel) => void;
 }
 
-export const Todo = ({ id, text, completed, onToggle, onDelete }: TodoProps) => {
+export const Todo = ({ item, onToggle, onDelete }: TodoProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <TouchableOpacity style={styles.checkbox} onPress={() => onToggle(id)}>
+      <TouchableOpacity style={styles.checkbox} onPress={() => onToggle(item)}>
         <Ionicons 
-          name={completed ? 'checkbox' : 'square-outline'} 
+          name={item.completed ? 'checkbox' : 'square-outline'} 
           size={24} 
-          color={completed ? '#4CAF50' : isDark ? '#ccc' : '#666'} 
+          color={item.completed ? '#4CAF50' : isDark ? '#ccc' : '#666'} 
         />
       </TouchableOpacity>
       
       <Text 
         style={[
           styles.text, 
-          completed && styles.completedText,
+          item.completed && styles.completedText,
           isDark && styles.textDark
         ]}
       >
-        {text}
+        {item.text}
       </Text>
       
-      <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(id)}>
+      <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(item)}>
         <Ionicons name="trash-outline" size={20} color={isDark ? '#ff6b6b' : '#ff4757'} />
       </TouchableOpacity>
     </View>
