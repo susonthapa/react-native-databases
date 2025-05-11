@@ -10,24 +10,6 @@ export function useTodos() {
 
   // Subscribe to changes in the todos collection
   useEffect(() => {
-    // Initial fetch
-    const fetchTodos = async () => {
-      try {
-        setIsLoading(true);
-        const result = await db.todos.find({
-          selector: {},
-          sort: [{ createdAt: 'desc' }]
-        }).exec();
-        setTodos(result);
-      } catch (error) {
-        console.error('Failed to fetch todos:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchTodos();
-
     // Subscribe to changes
     const subscription = db.todos.find().$.subscribe(newTodos => {
       // Sort the todos by createdAt descending
