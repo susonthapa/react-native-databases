@@ -1,6 +1,6 @@
-import { addRxPlugin, createRxDatabase } from 'rxdb';
+import { addRxPlugin, createRxDatabase, RxDatabase } from 'rxdb';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
-import { todoSchema } from './TodoSchema';
+import { TodoCollection, TodoCollectionMethods, TodoDocMethods, TodoDocument, todoSchema } from './TodoSchema';
 
 import * as Crypto from 'expo-crypto';
 import { RxDBAttachmentsPlugin } from 'rxdb/plugins/attachments';
@@ -26,21 +26,49 @@ if (typeof global.crypto.subtle === 'undefined') {
 }
 const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.DEBUG_PROD === 'true';
 
+// Define our database collections
+export type MyDatabaseCollections = {
+  todos: TodoCollection;
+};
+
+// Define the database type
+export type MyDatabase = RxDatabase<MyDatabaseCollections>;
+
 // Database singleton to prevent multiple instances
-let dbPromise: Promise<any> | null = null;
+let dbPromise: Promise<MyDatabase> | null = null;
 
 /**
  * Creates a new database or returns the existing one
  */
-export async function createDatabase() {
+export async function createDatabase(): Promise<MyDatabase> {
   if (dbPromise) return dbPromise;
 
   if (isDevelopment) {
     addRxPlugin(RxDBDevModePlugin);
-}
+  }
+
+  // Implementation of document methods
+  const todoDocMethods: TodoDocMethods = {
+    markAsCompleted: async function(this: TodoDocument) {
+      await this.patch({ completed: true });
+    },
+    toggleComplete: async function(this: TodoDocument) {
+      await this.patch({ completed: !this.completed });
+    }
+  };
+
+  // Implementation of collection methods
+  const todoCollectionMethods: TodoCollectionMethods = {
+    countCompleted: async function(this: TodoCollection) {
+      return (await this.find({ selector: { completed: true } }).exec()).length;
+    },
+    countActive: async function(this: TodoCollection) {
+      return (await this.find({ selector: { completed: false } }).exec()).length;
+    }
+  };
 
   // Create the database
-  dbPromise = createRxDatabase({
+  dbPromise = createRxDatabase<MyDatabaseCollections>({
     name: 'todosdb',
     storage: STORAGE_SQLITE,
     multiInstance: false, // Set to false for React Native
@@ -49,7 +77,9 @@ export async function createDatabase() {
     // Add collections
     await db.addCollections({
       todos: {
-        schema: todoSchema
+        schema: todoSchema,
+        methods: todoDocMethods,
+        statics: todoCollectionMethods
       }
     });
     
@@ -62,8 +92,3 @@ export async function createDatabase() {
 
   return dbPromise;
 }
-
-// Export types for better TypeScript support
-export type TodosDatabase = Awaited<ReturnType<typeof createDatabase>>;
-export type TodosCollection = TodosDatabase['todos'];
-export type TodoDocument = TodosCollection['findOne']; 

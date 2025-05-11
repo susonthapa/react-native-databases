@@ -1,8 +1,8 @@
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-import { createDatabase, TodosDatabase } from '../models/database';
+import { createDatabase, MyDatabase } from '../models/database';
 
 // Create a context to hold the database instance
-const DatabaseContext = createContext<TodosDatabase | null>(null);
+const DatabaseContext = createContext<MyDatabase | null>(null);
 
 type RxDBProviderProps = {
   children: ReactNode;
@@ -18,13 +18,13 @@ export function useDatabase() {
 }
 
 export function RxDBProvider({ children }: RxDBProviderProps) {
-  const [db, setDb] = useState<TodosDatabase | null>(null);
+  const [db, setDb] = useState<MyDatabase | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Initialize the database
   useEffect(() => {
     let isMounted = true;
-    let database: TodosDatabase | null = null;
+    let database: MyDatabase | null = null;
     
     const initDb = async () => {
       try {
