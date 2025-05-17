@@ -1,5 +1,6 @@
 import { addRxPlugin, createRxDatabase, RxDatabase } from 'rxdb';
 import { RxDBDevModePlugin } from 'rxdb/plugins/dev-mode';
+import { SubTaskCollection, SubTaskCollectionMethods, SubTaskDocMethods, SubTaskDocument, subTaskSchema } from './SubTaskSchema';
 import { TodoCollection, TodoCollectionMethods, TodoDocMethods, TodoDocument, todoSchema } from './TodoSchema';
 
 import * as Crypto from 'expo-crypto';
@@ -29,6 +30,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production' || process.env.DEBUG
 // Define our database collections
 export type MyDatabaseCollections = {
   todos: TodoCollection;
+  subtasks: SubTaskCollection;
 };
 
 // Define the database type
@@ -57,6 +59,13 @@ export async function createDatabase(): Promise<MyDatabase> {
     }
   };
 
+  // Implementation of document methods for SubTasks
+  const subTaskDocMethods: SubTaskDocMethods = {
+    toggleComplete: async function(this: SubTaskDocument) {
+      await this.patch({ completed: !this.completed });
+    }
+  };
+
   // Implementation of collection methods
   const todoCollectionMethods: TodoCollectionMethods = {
     countCompleted: async function(this: TodoCollection) {
@@ -64,6 +73,13 @@ export async function createDatabase(): Promise<MyDatabase> {
     },
     countActive: async function(this: TodoCollection) {
       return (await this.find({ selector: { completed: false } }).exec()).length;
+    }
+  };
+
+  // Implementation of collection methods for SubTasks
+  const subTaskCollectionMethods: SubTaskCollectionMethods = {
+    countByTask: async function(this: SubTaskCollection, taskId: string) {
+      return (await this.find({ selector: { taskId } }).exec()).length;
     }
   };
 
@@ -80,6 +96,11 @@ export async function createDatabase(): Promise<MyDatabase> {
         schema: todoSchema,
         methods: todoDocMethods,
         statics: todoCollectionMethods
+      },
+      subtasks: {
+        schema: subTaskSchema,
+        methods: subTaskDocMethods,
+        statics: subTaskCollectionMethods
       }
     });
     

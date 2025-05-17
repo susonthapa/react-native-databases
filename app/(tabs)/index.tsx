@@ -7,7 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTodos } from '../../hooks/useTodos';
 
 export default function HomeScreen() {
-  const { todos, addTodo, toggleTodo, deleteTodo, isLoading } = useTodos();
+  const { 
+    todos, 
+    subTasks, 
+    addTodo, 
+    toggleTodo, 
+    deleteTodo, 
+    addSubTask, 
+    toggleSubTask, 
+    deleteSubTask, 
+    isLoading 
+  } = useTodos();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -48,8 +58,12 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <Todo
               item={item}
+              subTasks={subTasks.filter(sub => sub.taskId === item.id)}
               onToggle={toggleTodo}
               onDelete={deleteTodo}
+              onAddSubTask={addSubTask}
+              onToggleSubTask={toggleSubTask}
+              onDeleteSubTask={deleteSubTask}
             />
           )}
           showsVerticalScrollIndicator={false}
