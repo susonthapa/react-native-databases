@@ -1,5 +1,6 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Ionicons } from '@expo/vector-icons';
+import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { SubTaskDocType } from '../models/SubTaskSchema';
@@ -39,29 +40,45 @@ export const Todo = ({
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      <View style={styles.todoRow}>
-        <TouchableOpacity style={styles.checkbox} onPress={() => onToggle(item)}>
-          <Ionicons 
-            name={item.completed ? 'checkbox' : 'square-outline'} 
-            size={24} 
-            color={item.completed ? '#4CAF50' : isDark ? '#ccc' : '#666'} 
-          />
+      <Link href={`/(tabs)/task/${item.id}`} asChild>
+        <TouchableOpacity>
+          <View style={styles.todoRow}>
+            <TouchableOpacity 
+              style={styles.checkbox} 
+              onPress={(e) => { 
+                e.stopPropagation();
+                onToggle(item); 
+              }}
+            >
+              <Ionicons 
+                name={item.completed ? 'checkbox' : 'square-outline'} 
+                size={24} 
+                color={item.completed ? '#4CAF50' : isDark ? '#ccc' : '#666'} 
+              />
+            </TouchableOpacity>
+            
+            <Text 
+              style={[
+                styles.text, 
+                item.completed && styles.completedText,
+                isDark && styles.textDark
+              ]}
+            >
+              {item.text}
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.deleteButton} 
+              onPress={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
+            >
+              <Ionicons name="trash-outline" size={20} color={isDark ? '#ff6b6b' : '#ff4757'} />
+            </TouchableOpacity>
+          </View>
         </TouchableOpacity>
-        
-        <Text 
-          style={[
-            styles.text, 
-            item.completed && styles.completedText,
-            isDark && styles.textDark
-          ]}
-        >
-          {item.text}
-        </Text>
-        
-        <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(item)}>
-          <Ionicons name="trash-outline" size={20} color={isDark ? '#ff6b6b' : '#ff4757'} />
-        </TouchableOpacity>
-      </View>
+      </Link>
 
       {/* Sub-tasks section */}
       <View style={styles.subTasksContainer}>
