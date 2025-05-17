@@ -4,29 +4,26 @@ import React from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useTodos } from '../../../hooks/useTodos';
+import { useTask } from '../../../hooks/useTask';
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { 
-    todos, 
-    subTasks, 
-    toggleTodo, 
-    deleteTodo, 
-    addSubTask, 
-    toggleSubTask, 
-    deleteSubTask, 
-    isLoading 
-  } = useTodos();
+  const {
+    task,
+    subTasks,
+    isLoading,
+    toggleTaskCompleted,
+    deleteTask,
+    addSubTask,
+    toggleSubTask,
+    deleteSubTask,
+  } = useTask(id);
   
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
   const [newSubTaskText, setNewSubTaskText] = React.useState('');
-
-  const task = todos.find(t => t.id === id);
-  const relevantSubTasks = subTasks.filter(st => st.taskId === id);
 
   if (isLoading) {
     return (
@@ -51,14 +48,14 @@ export default function TaskDetailScreen() {
 
   const handleAddSubTaskLocal = () => {
     if (newSubTaskText.trim() && task) {
-      addSubTask(task.id, newSubTaskText.trim());
+      addSubTask(newSubTaskText.trim());
       setNewSubTaskText('');
     }
   };
   
   const handleDeleteTask = async () => {
-    await deleteTodo(task);
-    router.back(); // Go back to the previous screen
+    await deleteTask();
+    router.back();
   }
 
   return (
@@ -75,7 +72,7 @@ export default function TaskDetailScreen() {
 
       <View style={[styles.statusContainer, isDark && styles.statusContainerDark]}>
         <Text style={[styles.statusLabel, isDark && styles.statusLabelDark]}>Status:</Text>
-        <TouchableOpacity onPress={() => toggleTodo(task)} style={styles.statusTouchable}>
+        <TouchableOpacity onPress={toggleTaskCompleted} style={styles.statusTouchable}>
           <Ionicons 
             name={task.completed ? 'checkbox' : 'square-outline'} 
             size={24} 
@@ -92,8 +89,8 @@ export default function TaskDetailScreen() {
 
       <View style={styles.subTasksSection}>
         <Text style={[styles.subTasksTitle, isDark && styles.subTasksTitleDark]}>Sub-tasks</Text>
-        {relevantSubTasks.length > 0 ? (
-          relevantSubTasks.map(subTask => (
+        {subTasks.length > 0 ? (
+          subTasks.map(subTask => (
             <View key={subTask.id} style={[styles.subTaskRow, isDark && styles.subTaskRowDark]}>
               <TouchableOpacity onPress={() => toggleSubTask(subTask)} style={styles.checkbox}>
                 <Ionicons 
