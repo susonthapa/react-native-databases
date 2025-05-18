@@ -1,126 +1,128 @@
+import { useDatabase } from '@/providers/DBProvider';
+import SubTask from '@/src/models/watermelon/SubTask';
+import Todo from '@/src/models/watermelon/Todo';
+import { Database, Q } from '@nozbe/watermelondb';
 import { useCallback, useEffect, useState } from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { SubTaskDocType } from '../models/SubTaskSchema';
-import { TodoDocType } from '../models/TodoSchema';
-import { useDatabase } from '../providers/RxDBProvider';
 
 export function useTodos() {
-  const db = useDatabase();
-  const [todos, setTodos] = useState<TodoDocType[]>([]);
-  const [subTasks, setSubTasks] = useState<SubTaskDocType[]>([]);
+  const db = useDatabase() as Database;
+  const [todos, setTodos] = useState<Todo[]>([]);
+  const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // Subscribe to changes in the todos collection
   useEffect(() => {
-    const todoSubscription = db.todos.find().$.subscribe(newTodos => {
-      const sortedTodos = [...newTodos].sort((a, b) => b.createdAt - a.createdAt);
-      setTodos(sortedTodos);
+    if (!db) return;
+    const todosCollection = db.get<Todo>('todos');
+    const observer = todosCollection
+      .query(Q.sortBy('created_at', Q.desc))
+      .observe();
+
+    const subscription = observer.subscribe(newTodos => {
+      setTodos(newTodos);
       setIsLoading(false);
     });
 
-    // Cleanup subscription
     return () => {
-      todoSubscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [db]);
 
   // Subscribe to changes in the subtasks collection
   useEffect(() => {
-    if (!db.subtasks) return;
+    if (!db) return;
+    const subTasksCollection = db.get<SubTask>('sub_tasks');
+    const observer = subTasksCollection
+      .query(Q.sortBy('created_at', Q.asc))
+      .observe();
 
-    const subTaskSubscription = db.subtasks.find().$.subscribe(newSubTasks => {
-      const sortedSubTasks = [...newSubTasks].sort((a, b) => a.createdAt - b.createdAt);
-      setSubTasks(sortedSubTasks);
+    const subscription = observer.subscribe(newSubTasks => {
+      setSubTasks(newSubTasks);
     });
 
     return () => {
-      subTaskSubscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [db, db.subtasks]);
+  }, [db]);
 
   // Add a new todo
   const addTodo = useCallback(async (text: string) => {
+    if (!db) return;
     try {
-      const newTodo = {
-        id: uuidv4(),
-        text,
-        completed: false,
-        createdAt: Date.now()
-      };
-      await db.todos.insert(newTodo);
+      await db.write(async () => {
+        await db.get<Todo>('todos').create(todo => {
+          todo.text = text;
+          todo.completed = false;
+          // createdAt is handled automatically by WatermelonDB if schema is set up for it
+        });
+      });
     } catch (error) {
       console.error('Failed to add todo:', error);
     }
   }, [db]);
 
   // Toggle the completed status of a todo
-  const toggleTodo = useCallback(async (todo: TodoDocType) => {
+  const toggleTodo = useCallback(async (todo: Todo) => {
     try {
-      const todoDoc = await db.todos.findOne({ selector: { id: todo.id } }).exec();
-      if (todoDoc) {
-        await todoDoc.patch({ completed: !todo.completed });
-      }
+      await todo.toggleComplete();
     } catch (error) {
       console.error('Failed to toggle todo:', error);
     }
-  }, [db]);
+  }, []);
 
   // Delete a todo and its subtasks
-  const deleteTodo = useCallback(async (todo: TodoDocType) => {
+  const deleteTodo = useCallback(async (todo: Todo) => {
+    if (!db) return;
     try {
-      const todoDoc = await db.todos.findOne({ selector: { id: todo.id } }).exec();
-      if (todoDoc) {
-        // Delete associated subtasks first
-        const relatedSubTasks = await db.subtasks.find({ selector: { taskId: todo.id } }).exec();
-        for (const subTask of relatedSubTasks) {
-          await subTask.remove();
-        }
-        await todoDoc.remove();
-      }
+      await db.write(async () => {
+        // Fetch and delete associated subtasks first
+        const relatedSubTasks = await todo.subTasks.fetch();
+        const subTasksToDelete = relatedSubTasks.map(subTask => subTask.prepareDestroyPermanently());
+        
+        await db.batch(
+          ...subTasksToDelete,
+          todo.prepareDestroyPermanently()
+        );
+      });
     } catch (error) {
       console.error('Failed to delete todo and its subtasks:', error);
     }
-  }, [db]);
+  }, [db]); // db is needed for batch operation
 
   // Add a new subtask
-  const addSubTask = useCallback(async (taskId: string, text: string) => {
+  const addSubTask = useCallback(async (todoId: string, text: string) => {
+    if (!db) return;
     try {
-      const newSubTask = {
-        id: uuidv4(),
-        taskId,
-        text,
-        completed: false,
-        createdAt: Date.now()
-      };
-      await db.subtasks.insert(newSubTask);
+      await db.write(async () => {
+        await db.get<SubTask>('sub_tasks').create(subTask => {
+          subTask.todoId = todoId;
+          subTask.text = text;
+          subTask.completed = false;
+          // createdAt is handled automatically
+        });
+      });
     } catch (error) {
       console.error('Failed to add subtask:', error);
     }
   }, [db]);
 
   // Toggle the completed status of a subtask
-  const toggleSubTask = useCallback(async (subTask: SubTaskDocType) => {
+  const toggleSubTask = useCallback(async (subTask: SubTask) => {
     try {
-      const subTaskDoc = await db.subtasks.findOne({ selector: { id: subTask.id } }).exec();
-      if (subTaskDoc) {
-        await subTaskDoc.patch({ completed: !subTask.completed });
-      }
+      await subTask.toggleComplete();
     } catch (error) {
       console.error('Failed to toggle subtask:', error);
     }
-  }, [db]);
+  }, []);
 
   // Delete a subtask
-  const deleteSubTask = useCallback(async (subTask: SubTaskDocType) => {
+  const deleteSubTask = useCallback(async (subTask: SubTask) => {
     try {
-      const subTaskDoc = await db.subtasks.findOne({ selector: { id: subTask.id } }).exec();
-      if (subTaskDoc) {
-        await subTaskDoc.remove();
-      }
+      await subTask.destroyPermanently(); // This is a direct action, db.write is implicit
     } catch (error) {
       console.error('Failed to delete subtask:', error);
     }
-  }, [db]);
+  }, []);
 
   return {
     todos,
@@ -131,6 +133,6 @@ export function useTodos() {
     addSubTask,
     toggleSubTask,
     deleteSubTask,
-    isLoading
+    isLoading,
   };
 } 

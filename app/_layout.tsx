@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { RxDBProvider } from '../providers/RxDBProvider';
+import { DBProvider } from '@/providers/DBProvider';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -22,7 +22,7 @@ export default function RootLayout() {
   }
 
   return (
-    <RxDBProvider>
+    <DBProvider>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
         <Stack>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -30,6 +30,6 @@ export default function RootLayout() {
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>
-    </RxDBProvider>
+    </DBProvider>
   );
 }
