@@ -92,7 +92,7 @@ export default function TaskDetailScreen() {
         {subTasks.length > 0 ? (
           subTasks.map(subTask => (
             <View key={subTask.id} style={[styles.subTaskRow, isDark && styles.subTaskRowDark]}>
-              <TouchableOpacity onPress={() => toggleSubTask(subTask)} style={styles.checkbox}>
+              <TouchableOpacity onPress={() => toggleSubTask(subTask.id, subTask.completed)} style={styles.checkbox}>
                 <Ionicons 
                   name={subTask.completed ? 'checkbox-outline' : 'square-outline'} 
                   size={20} 
@@ -106,7 +106,7 @@ export default function TaskDetailScreen() {
               ]}>
                 {subTask.text}
               </Text>
-              <TouchableOpacity onPress={() => deleteSubTask(subTask)} style={styles.deleteButton}>
+              <TouchableOpacity onPress={() => deleteSubTask(subTask.id)} style={styles.deleteButton}>
                 <Ionicons name="trash-bin-outline" size={18} color={isDark ? '#ff6b6b' : '#ff4757'} />
               </TouchableOpacity>
             </View>

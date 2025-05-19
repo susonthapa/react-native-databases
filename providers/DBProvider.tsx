@@ -1,8 +1,8 @@
-import { DrizzleDB, db as drizzleDBInstance } from '@/src/db'; // Import the DrizzleDB type and instance, and rawExpoDb
+import { DrizzleDB, db as drizzleDBInstance } from '@/src/db/'; // Import the DrizzleDB type and instance, and rawExpoDb
 import { useMigrations } from 'drizzle-orm/expo-sqlite/migrator';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import migrations from '../drizzle_migrations/migrations.js'; // Adjust path if your drizzle output is different
+import migrations from '../drizzle/migrations/migrations.js'; // Adjust path if your drizzle output is different
 
 // Create a context to hold the database instance
 const DatabaseContext = createContext<DrizzleDB | null>(null);

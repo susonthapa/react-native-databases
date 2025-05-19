@@ -1,5 +1,4 @@
 import 'react-native-get-random-values'; // CRITICAL: Must be first import
-import '../models/shim';
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';

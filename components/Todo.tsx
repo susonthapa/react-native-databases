@@ -1,19 +1,18 @@
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { SubTask, Todo as TodoType } from '@/src/db/schema';
 import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SubTaskDocType } from '../models/SubTaskSchema';
-import { TodoDocType } from '../models/TodoSchema';
 
 interface TodoProps {
-  item: TodoDocType;
-  subTasks: SubTaskDocType[];
-  onToggle: (item: TodoDocType) => void;
-  onDelete: (item: TodoDocType) => void;
+  item: TodoType;
+  subTasks: SubTask[];
+  onToggle: (item: TodoType) => void;
+  onDelete: (item: TodoType) => void;
   onAddSubTask: (taskId: string, text: string) => void;
-  onToggleSubTask: (subTask: SubTaskDocType) => void;
-  onDeleteSubTask: (subTask: SubTaskDocType) => void;
+  onToggleSubTask: (subTask: SubTask) => void;
+  onDeleteSubTask: (subTask: SubTask) => void;
 }
 
 export const Todo = ({ 
@@ -36,7 +35,7 @@ export const Todo = ({
     }
   };
 
-  const relevantSubTasks = subTasks.filter(st => st.taskId === item.id);
+  const relevantSubTasks = subTasks.filter(st => st.todoId === item.id);
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>

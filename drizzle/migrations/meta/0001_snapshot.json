@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "5ee07afc-a049-455c-ae94-a9b28053a22c",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "634440f7-81e5-4cfa-91c6-1229ad6a95e1",
+  "prevId": "d7ccd2f0-ba1f-4281-af0d-78fa3f49c189",
   "tables": {
     "sub_tasks": {
       "name": "sub_tasks",

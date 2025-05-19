@@ -28,3 +28,6 @@ export const subTasksRelations = relations(subTasks, ({ one }) => ({
     references: [todos.id],
   }),
 })); 
+
+export type Todo = typeof todos.$inferSelect;
+export type SubTask = typeof subTasks.$inferSelect;

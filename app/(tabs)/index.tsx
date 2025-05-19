@@ -58,12 +58,12 @@ export default function HomeScreen() {
           renderItem={({ item }) => (
             <Todo
               item={item}
-              subTasks={subTasks.filter(sub => sub.taskId === item.id)}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
+              subTasks={subTasks.filter(sub => sub.todoId === item.id)}
+              onToggle={() => toggleTodo(item.id, item.completed)}
+              onDelete={() => deleteTodo(item.id)}
               onAddSubTask={addSubTask}
-              onToggleSubTask={toggleSubTask}
-              onDeleteSubTask={deleteSubTask}
+              onToggleSubTask={(subTask) => toggleSubTask(subTask.id, subTask.completed)}
+              onDeleteSubTask={(subTask) => deleteSubTask(subTask.id)}
             />
           )}
           showsVerticalScrollIndicator={false}
