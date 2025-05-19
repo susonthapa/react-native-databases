@@ -36,21 +36,7 @@
           "backgroundColor": "#ffffff"
         }
       ],
-      [
-        "@morrowdigital/watermelondb-expo-plugin"
-      ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "packagingOptions": {
-              "pickFirst": [
-                "**/libc++_shared.so"
-              ]
-            }
-          }
-        }
-      ]
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true

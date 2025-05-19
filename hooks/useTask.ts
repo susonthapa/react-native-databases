@@ -1,136 +1,105 @@
 import { useDatabase } from '@/providers/DBProvider';
-import SubTask from '@/src/models/watermelon/SubTask';
-import Todo from '@/src/models/watermelon/Todo';
-import { Database } from '@nozbe/watermelondb';
+import { DrizzleDB } from '@/src/db';
+import * as schema from '@/src/db/schema';
+import { asc, eq } from 'drizzle-orm';
 import { useCallback, useEffect, useState } from 'react';
-import { Subscription as ZenSubscription } from 'rxjs';
+
+// Types from useTodos can be reused or redefined here if preferred
+import { SubTask, Todo } from './useTodos'; // Assuming useTodos exports these types
 
 export function useTask(taskId: string | undefined) {
-  const db = useDatabase() as Database;
+  const db = useDatabase() as DrizzleDB;
   const [task, setTask] = useState<Todo | null | undefined>(undefined);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchTaskAndSubTasks = useCallback(async () => {
     if (!db || !taskId) {
-      setIsLoading(false); // Set to false if no taskId
-      setTask(undefined); // Clear task if no taskId
+      setTask(undefined);
       setSubTasks([]);
+      setIsLoading(!taskId); // Only loading if taskId is present
       return;
     }
-
     setIsLoading(true);
-    let taskSubscription: ZenSubscription | undefined;
-    let subTaskSubscription: ZenSubscription | undefined;
+    try {
+      const taskResult = await db.select().from(schema.todos).where(eq(schema.todos.id, taskId)).limit(1);
+      const currentTask = taskResult[0] || null;
+      setTask(currentTask);
 
-    // Observe the specific task by ID
-    const taskObservable = db.get<Todo>('todos').findAndObserve(taskId);
-    taskSubscription = taskObservable.subscribe(
-      foundTask => {
-        setTask(foundTask); // foundTask will be null if not found after initial fetch
-        if (!foundTask) {
-          setIsLoading(false); // Task not found, stop loading
-          setSubTasks([]); // Clear subtasks
-        } else {
-          // If task is found, observe its subtasks
-          if (subTaskSubscription) subTaskSubscription.unsubscribe(); // Unsubscribe from previous subtask listener
-          
-          subTaskSubscription = foundTask.subTasks
-            .observe()
-            .subscribe(relatedSubTasks => {
-              const sortedSubTasks = [...relatedSubTasks].sort((a, b) => {
-                const aTime = a.createdAt instanceof Date ? a.createdAt.getTime() : 0;
-                const bTime = b.createdAt instanceof Date ? b.createdAt.getTime() : 0;
-
-                if (!(a.createdAt instanceof Date)) {
-                  console.warn(`SubTask with id ${a.id} has invalid createdAt:`, a.createdAt);
-                }
-                if (!(b.createdAt instanceof Date)) {
-                  console.warn(`SubTask with id ${b.id} has invalid createdAt:`, b.createdAt);
-                }
-                return aTime - bTime;
-              });
-              setSubTasks(sortedSubTasks);
-              setIsLoading(false);
-            });
-        }
-      },
-      error => {
-        console.error("Error observing task:", error);
-        setIsLoading(false);
-        setTask(null); // Indicate error / not found
+      if (currentTask) {
+        const subTasksResult = await db.select().from(schema.subTasks)
+          .where(eq(schema.subTasks.todoId, taskId))
+          .orderBy(asc(schema.subTasks.createdAt));
+        setSubTasks(subTasksResult);
+      } else {
+        setSubTasks([]); // No task, no subtasks
       }
-    );
-
-    return () => {
-      if (taskSubscription) taskSubscription.unsubscribe();
-      if (subTaskSubscription) subTaskSubscription.unsubscribe();
-    };
+    } catch (error) {
+      console.error("Failed to fetch task and subtasks:", error);
+      setTask(null);
+      setSubTasks([]);
+    } finally {
+      setIsLoading(false);
+    }
   }, [db, taskId]);
 
-  // Toggle the completed status of the main task
-  const toggleTaskCompleted = useCallback(async () => {
-    if (task && task.toggleComplete) {
-      try {
-        await task.toggleComplete();
-      } catch (error) {
-        console.error('Failed to toggle task completion:', error);
-      }
-    }
-  }, [task]);
+  useEffect(() => {
+    fetchTaskAndSubTasks();
+  }, [fetchTaskAndSubTasks]);
 
-  // Delete the main task and its subtasks
+  const toggleTaskCompleted = useCallback(async () => {
+    if (!db || !task) return;
+    try {
+      await db.update(schema.todos).set({ completed: !task.completed }).where(eq(schema.todos.id, task.id));
+      fetchTaskAndSubTasks(); // Re-fetch
+    } catch (error) {
+      console.error('Failed to toggle task completion:', error);
+    }
+  }, [db, task, fetchTaskAndSubTasks]);
+
   const deleteTask = useCallback(async () => {
     if (!db || !task) return;
     try {
-      await db.write(async () => {
-        const relatedSubTasks = await task.subTasks.fetch();
-        const subTasksToDelete = relatedSubTasks.map(st => st.prepareDestroyPermanently());
-        await db.batch(
-          ...subTasksToDelete,
-          task.prepareDestroyPermanently()
-        );
-      });
-      // After deletion, the task observable will emit null, updating the state.
-      // Navigation (e.g., router.back()) should be handled in the component using this hook.
+      // Cascade delete should handle subtasks as per schema
+      await db.delete(schema.todos).where(eq(schema.todos.id, task.id));
+      // After deletion, task will be set to null by the next fetch or manually
+      setTask(null); // Optimistically set to null or navigate away in component
+      setSubTasks([]);
+      // Potentially call a navigation function here if provided
     } catch (error) {
-      console.error('Failed to delete task and its subtasks:', error);
+      console.error('Failed to delete task:', error);
     }
-  }, [db, task]);
+  }, [db, task]); // fetchTaskAndSubTasks could be added if we want to confirm deletion from DB
 
-  // Add a new subtask
-  const addSubTask = useCallback(async (text: string) => {
-    if (!db || !taskId || !task) return; // Ensure task exists to associate with
+  const addSubTaskToCurrent = useCallback(async (text: string) => {
+    if (!db || !taskId) return;
     try {
-      await db.write(async () => {
-        await db.get<SubTask>('sub_tasks').create(st => {
-          st.text = text;
-          st.completed = false;
-          st.todoId = taskId; // or task.id
-        });
-      });
+      await db.insert(schema.subTasks).values({ todoId: taskId, text: text, completed: false, createdAt: new Date() });
+      fetchTaskAndSubTasks(); // Re-fetch subtasks for the current task
     } catch (error) {
       console.error('Failed to add subtask:', error);
     }
-  }, [db, taskId, task]);
+  }, [db, taskId, fetchTaskAndSubTasks]);
 
-  // Toggle the completed status of a subtask
-  const toggleSubTask = useCallback(async (subTask: SubTask) => {
+  const toggleSubTask = useCallback(async (subTaskId: string, currentCompleted: boolean) => {
+    if (!db) return;
     try {
-      await subTask.toggleComplete();
+      await db.update(schema.subTasks).set({ completed: !currentCompleted }).where(eq(schema.subTasks.id, subTaskId));
+      fetchTaskAndSubTasks(); // Re-fetch
     } catch (error) {
       console.error('Failed to toggle subtask:', error);
     }
-  }, []);
+  }, [db, fetchTaskAndSubTasks]);
 
-  // Delete a subtask
-  const deleteSubTask = useCallback(async (subTask: SubTask) => {
+  const deleteSubTask = useCallback(async (subTaskId: string) => {
+    if (!db) return;
     try {
-      await subTask.destroyPermanently();
+      await db.delete(schema.subTasks).where(eq(schema.subTasks.id, subTaskId));
+      fetchTaskAndSubTasks(); // Re-fetch
     } catch (error) {
       console.error('Failed to delete subtask:', error);
     }
-  }, []);
+  }, [db, fetchTaskAndSubTasks]);
 
   return {
     task,
@@ -138,8 +107,9 @@ export function useTask(taskId: string | undefined) {
     isLoading,
     toggleTaskCompleted,
     deleteTask,
-    addSubTask,
+    addSubTask: addSubTaskToCurrent, // Renamed to avoid confusion if useTodos.addSubTask is also imported
     toggleSubTask,
     deleteSubTask,
+    refreshTask: fetchTaskAndSubTasks, // Expose refresh
   };
 } 
