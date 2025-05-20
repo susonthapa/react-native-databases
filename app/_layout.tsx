@@ -1,4 +1,4 @@
-import 'react-native-get-random-values'; // CRITICAL: Must be first import
+import 'react-native-get-random-values';
 
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -8,14 +8,25 @@ import 'react-native-reanimated';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { DBProvider } from '@/providers/DBProvider';
+import { initializeDB } from '@/src/db';
+import { useEffect, useState } from 'react';
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const [dbInitialized, setDbInitialized] = useState(false);
 
-  if (!loaded) {
+  useEffect(() => {
+    async function init() {
+      await initializeDB();
+      setDbInitialized(true);
+    }
+    init();
+  }, []);
+
+  if (!loaded || !dbInitialized) {
     // Async font loading only occurs in development.
     return null;
   }
