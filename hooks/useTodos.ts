@@ -2,6 +2,7 @@ import { useDatabase } from '@/providers/DBProvider';
 import { DrizzleDB } from '@/src/db';
 import * as schema from '@/src/db/schema';
 import { asc, desc, eq } from 'drizzle-orm';
+import { useLiveQuery } from 'drizzle-orm/expo-sqlite';
 import { useCallback, useEffect, useState } from 'react';
 
 // Define types for Todo and SubTask based on Drizzle schema for hook usage
@@ -10,6 +11,7 @@ export type SubTask = typeof schema.subTasks.$inferSelect;
 
 export function useTodos() {
   const db = useDatabase() as DrizzleDB;
+  const {data} = useLiveQuery(db.select().from(schema.todos).orderBy(desc(schema.todos.createdAt)));
   const [todos, setTodos] = useState<Todo[]>([]);
   const [subTasks, setSubTasks] = useState<SubTask[]>([]); // Still fetching all subtasks globally for now
   const [isLoading, setIsLoading] = useState(true);
@@ -121,3 +123,4 @@ export function useTodos() {
     refreshSubTasks: fetchSubTasks,
   };
 } 
+
