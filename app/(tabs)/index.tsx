@@ -1,35 +1,33 @@
 import { Todo } from '@/components/Todo';
 import { TodoInput } from '@/components/TodoInput';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SheetManager } from 'react-native-actions-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useTodos } from '../../hooks/useTodos';
+import { useTodoActions, useTodos } from '../../hooks/useTodos';
 
 export default function HomeScreen() {
   const { 
-    todos, 
-    subTasks, 
     addTodo, 
-    toggleTodo, 
-    deleteTodo, 
-    addSubTask, 
-    toggleSubTask, 
-    deleteSubTask, 
-    isLoading 
-  } = useTodos();
+    toggleTodo,
+    deleteTodo,
+    editTodo,
+    duplicateTodo,
+    addSubTask,
+    toggleSubTask,
+    deleteSubTask,
+    editSubTask,
+  } = useTodoActions();
+  const { todos, subTasks } = useTodos();
   const insets = useSafeAreaInsets();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Show a loading indicator while data is being fetched
-  if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, isDark && styles.containerDark]}>
-        <ActivityIndicator size="large" color={isDark ? '#4d9be6' : '#3498db'} />
-      </View>
-    );
-  }
+  const handleQuickActions = () => {
+    SheetManager.show('quick-actions');
+  };
 
   return (
     <View 
@@ -39,9 +37,21 @@ export default function HomeScreen() {
         { paddingTop: insets.top }
       ]}
     >
-      <Text style={[styles.title, isDark && styles.titleDark]}>
-        TODO List
-      </Text>
+      <View style={styles.header}>
+        <Text style={[styles.title, isDark && styles.titleDark]}>
+          TODO List
+        </Text>
+        <TouchableOpacity 
+          style={styles.quickActionsButton}
+          onPress={handleQuickActions}
+        >
+          <Ionicons 
+            name="ellipsis-vertical" 
+            size={24} 
+            color={isDark ? '#ecf0f1' : '#2c3e50'} 
+          />
+        </TouchableOpacity>
+      </View>
       
       <TodoInput onAddTodo={addTodo} />
       
@@ -61,9 +71,12 @@ export default function HomeScreen() {
               subTasks={subTasks.filter(sub => sub.todoId === item.id)}
               onToggle={() => toggleTodo(item.id, item.completed)}
               onDelete={() => deleteTodo(item.id)}
+              onEdit={editTodo}
+              onDuplicate={duplicateTodo}
               onAddSubTask={addSubTask}
               onToggleSubTask={(subTask) => toggleSubTask(subTask.id, subTask.completed)}
               onDeleteSubTask={(subTask) => deleteSubTask(subTask.id)}
+              onEditSubTask={editSubTask}
             />
           )}
           showsVerticalScrollIndicator={false}
@@ -89,15 +102,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
     color: '#2c3e50',
   },
   titleDark: {
     color: '#ecf0f1',
+  },
+  quickActionsButton: {
+    padding: 8,
+    borderRadius: 8,
   },
   listContent: {
     paddingBottom: 20,

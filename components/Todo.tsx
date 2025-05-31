@@ -4,15 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SheetManager } from 'react-native-actions-sheet';
 
 interface TodoProps {
   item: TodoType;
   subTasks: SubTask[];
   onToggle: (item: TodoType) => void;
   onDelete: (item: TodoType) => void;
+  onEdit: (id: string, text: string) => void;
+  onDuplicate: (todo: TodoType) => void;
   onAddSubTask: (taskId: string, text: string) => void;
   onToggleSubTask: (subTask: SubTask) => void;
   onDeleteSubTask: (subTask: SubTask) => void;
+  onEditSubTask: (id: string, text: string) => void;
 }
 
 export const Todo = ({ 
@@ -20,9 +24,12 @@ export const Todo = ({
   subTasks, 
   onToggle, 
   onDelete, 
+  onEdit,
+  onDuplicate,
   onAddSubTask, 
   onToggleSubTask, 
-  onDeleteSubTask 
+  onDeleteSubTask,
+  onEditSubTask
 }: TodoProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -35,12 +42,24 @@ export const Todo = ({
     }
   };
 
+  const handleTodoLongPress = () => {
+    SheetManager.show('todo-actions', {
+      payload: { todo: item },
+    });
+  };
+
+  const handleSubTaskLongPress = (subTask: SubTask) => {
+    SheetManager.show('subtask-actions', {
+      payload: { subTask },
+    });
+  };
+
   const relevantSubTasks = subTasks.filter(st => st.todoId === item.id);
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <Link href={`/(tabs)/task/${item.id}`} asChild>
-        <TouchableOpacity>
+        <TouchableOpacity onLongPress={handleTodoLongPress}>
           <View style={styles.todoRow}>
             <TouchableOpacity 
               style={styles.checkbox} 
@@ -67,13 +86,13 @@ export const Todo = ({
             </Text>
             
             <TouchableOpacity 
-              style={styles.deleteButton} 
+              style={styles.moreButton} 
               onPress={(e) => {
                 e.stopPropagation();
-                onDelete(item);
+                handleTodoLongPress();
               }}
             >
-              <Ionicons name="trash-outline" size={20} color={isDark ? '#ff6b6b' : '#ff4757'} />
+              <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? '#ccc' : '#666'} />
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -86,7 +105,10 @@ export const Todo = ({
             data={relevantSubTasks}
             keyExtractor={(sub) => sub.id}
             renderItem={({ item: subTask }) => (
-              <View style={[styles.subTaskRow, isDark && styles.subTaskRowDark]}>
+              <TouchableOpacity
+                style={[styles.subTaskRow, isDark && styles.subTaskRowDark]}
+                onLongPress={() => handleSubTaskLongPress(subTask)}
+              >
                 <TouchableOpacity style={styles.checkbox} onPress={() => onToggleSubTask(subTask)}>
                   <Ionicons 
                     name={subTask.completed ? 'checkbox-outline' : 'square-outline'} 
@@ -103,10 +125,13 @@ export const Todo = ({
                 >
                   {subTask.text}
                 </Text>
-                <TouchableOpacity style={styles.deleteButton} onPress={() => onDeleteSubTask(subTask)}>
-                  <Ionicons name="trash-bin-outline" size={18} color={isDark ? '#ff6b6b' : '#ff4757'} />
+                <TouchableOpacity 
+                  style={styles.moreButton} 
+                  onPress={() => handleSubTaskLongPress(subTask)}
+                >
+                  <Ionicons name="ellipsis-horizontal" size={16} color={isDark ? '#aaa' : '#888'} />
                 </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             )}
           />
         )}
@@ -171,8 +196,9 @@ const styles = StyleSheet.create({
     textDecorationLine: 'line-through',
     color: '#aaa',
   },
-  deleteButton: {
-    padding: 5,
+  moreButton: {
+    padding: 8,
+    marginLeft: 8,
   },
   subTasksContainer: {
     marginTop: 10,
